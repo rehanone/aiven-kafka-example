@@ -2,7 +2,6 @@ import Dependencies.*
 
 ThisBuild / scalaVersion := "3.3.4"
 
-
 val compilerOptionsCommon = Seq(
   "-encoding",
   "UTF-8",
@@ -16,23 +15,30 @@ val compilerOptionsCommon = Seq(
 )
 
 val compilerOptionsScala3 = Seq(
-  //  "-Xsource-features:leading-infix",
+  "-Xmax-inlines:64"
 )
 
 lazy val root = (project in file("."))
   .settings(
-    name := "aiven-kafka-example",
+    name             := "aiven-kafka-example",
     idePackagePrefix := Some("aiven.kafka")
   )
   .settings(
     scalacOptions ++= compilerOptionsCommon ++ PartialFunction
-      .condOpt(CrossVersion.partialVersion(scalaVersion.value)) {
-        case Some((3, _))            => compilerOptionsScala3
+      .condOpt(CrossVersion.partialVersion(scalaVersion.value)) { case Some((3, _)) =>
+        compilerOptionsScala3
       }
       .toList
       .flatten,
-    libraryDependencies ++= testDeps
+    libraryDependencies ++= munitDeps
       :+ fs2Core
       :+ fs2Io
       :+ fs2Kafka
+      :+ circeGeneric
+      :+ circeParser
+      :+ circeConfig
+      :+ typesafeConfig
   )
+
+addCommandAlias("fmt", "all scalafmtSbt scalafmt test:scalafmt")
+addCommandAlias("check", "all scalafmtSbtCheck scalafmtCheck test:scalafmtCheck")

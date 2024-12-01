@@ -1,12 +1,11 @@
 package aiven.kafka
 
-import cats.effect.{IO, IOApp}
+import cats.effect.{ IO, IOApp }
 import fs2.*
 
 object App extends IOApp.Simple {
 
-  def run: IO[Unit] = {
-
+  def run: IO[Unit] =
     Stream
       .resource {
         Orchestrator
@@ -15,5 +14,4 @@ object App extends IOApp.Simple {
       .flatMap(_.run)
       .compile
       .drain
-  }
 }
