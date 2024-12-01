@@ -1,22 +1,19 @@
 package aiven.kafka
 
-import cats.effect.*
+import cats.effect.{IO, IOApp}
 import fs2.*
-import scala.concurrent.duration.*
 
 object App extends IOApp.Simple {
 
-  def run: IO[Unit] =
-    val v1 = Stream
-      .emit[IO, Long](System.currentTimeMillis())
-    val v2 = Stream
-      .awakeDelay[IO](10 seconds)
+  def run: IO[Unit] = {
 
-    val v3 = v1 zip v2
-
-    v2.flatMap { x =>
-        Stream.eval(Sync[IO].delay(println(x)))
+    Stream
+      .resource {
+        Orchestrator
+          .create[IO]
       }
+      .flatMap(_.run)
       .compile
       .drain
+  }
 }
