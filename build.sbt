@@ -32,6 +32,7 @@ lazy val root = (project in file("."))
       .toList
       .flatten,
     libraryDependencies ++= testDeps
+      :+ fs2Core
       :+ fs2Io
       :+ fs2Kafka
   )
