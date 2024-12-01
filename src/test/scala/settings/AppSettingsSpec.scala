@@ -20,7 +20,20 @@ class AppSettingsSpec extends CatsEffectSuite {
           consumer = ConsumerSettings(
             bootstrapServers = "kafka-2debecd3-ink-8f46.f.aivencloud.com:14844",
             group = "aiven",
-            topic = "default_topic",
+            topic = "pizza-orders.json",
+            authentication = AuthenticationSettings(
+              securityProtocol = "SSL",
+              truststoreLocation = "client.truststore.jks",
+              truststorePassword = "",
+              keystoreType = "PKCS12",
+              keystoreLocation = "client.keystore.p12",
+              keystorePassword = "",
+              keyPassword = ""
+            )
+          ),
+          producer = ProducerSettings(
+            bootstrapServers = "kafka-2debecd3-ink-8f46.f.aivencloud.com:14844",
+            topic = "pizza-orders.ack.json",
             authentication = AuthenticationSettings(
               securityProtocol = "SSL",
               truststoreLocation = "client.truststore.jks",

@@ -1,6 +1,6 @@
 package aiven.kafka
 
-import cats.effect.{ IO, IOApp }
+import cats.effect.{ ExitCode, IO, IOApp }
 import fs2.*
 
 object App extends IOApp.Simple {
@@ -14,4 +14,5 @@ object App extends IOApp.Simple {
       .flatMap(_.run)
       .compile
       .drain
+      .as(ExitCode.Success)
 }

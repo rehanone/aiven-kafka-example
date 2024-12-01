@@ -30,8 +30,15 @@ object AppSettings {
     authentication: AuthenticationSettings
   )
 
+  case class ProducerSettings(
+    bootstrapServers: String,
+    topic: String,
+    authentication: AuthenticationSettings
+  )
+
   case class StreamSettings(
-    consumer: ConsumerSettings
+    consumer: ConsumerSettings,
+    producer: ProducerSettings
   )
 
   case class AivenSettings(
