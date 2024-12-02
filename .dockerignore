@@ -1,0 +1,7 @@
+**
+!docker
+!build.sbt
+!project/plugins.sbt
+!project/build.properties
+!project/Dependencies.scala
+!src
