@@ -1,11 +1,14 @@
 package aiven.kafka
 
+import aiven.kafka.common.time.TimeConverter
 import cats.implicits.*
 import aiven.kafka.settings.AppSettings
 import cats.effect.{ Async, Resource, Sync }
-import cats.effect.kernel.Concurrent
+import cats.effect.kernel.{ Clock, Concurrent }
 import fs2.Stream
 import fs2.kafka.*
+
+import java.util.UUID
 
 sealed trait Orchestrator[F[_]] {
 
@@ -64,15 +67,28 @@ case object Orchestrator {
 
         def processRecord(
           committable: CommittableConsumerRecord[F, String, String]
-        ): F[ProducerRecord[String, String]] =
+        ): F[ProducerRecord[String, String]] = {
+          import TimeConverter.*
+
           for {
             key        <- F.delay(committable.record.key)
             value      <- F.delay(committable.record.value)
+            timestamp  <- Clock[F].realTime.map(_.toMillis.format(DATE_FORMAT_ISO8601))
+            ackId      <- F.delay(UUID.randomUUID())
+            ackKey     <- F.delay {
+                            s"""
+                           |{
+                           |  "id": "$ackId",
+                           |  "timestamp": "$timestamp"
+                           |}
+                           |""".stripMargin
+                          }
             ackMessage <- F.delay {
                             s"""
                                |{
                                |  "status": "processed",
                                |  "source": {
+                               |    "key": $key,
                                |    "topic": "${committable.offset.topicPartition.topic()}",
                                |    "partition": ${committable.offset.topicPartition.partition()},
                                |    "offset": ${committable.offset.offsetAndMetadata.offset()}
@@ -80,26 +96,23 @@ case object Orchestrator {
                                |}
                                |""".stripMargin
                           }
-            ackRecord  <- F.delay(ProducerRecord(pizzaOrdersAckTopic, key, value = ackMessage))
+            ackRecord  <- F.delay(ProducerRecord(pizzaOrdersAckTopic, ackKey, value = ackMessage))
             _          <- F.delay(println(s"Processing record key: $key with payload $value"))
-            _          <- F.delay(println(s"Publishing Ack: $key with payload $ackMessage"))
+            _          <- F.delay(println(s"Publishing Ack: $ackKey with payload $ackMessage"))
           } yield ackRecord
+        }
 
         KafkaConsumer
           .stream(consumerSettings)
           .subscribeTo(pizzaOrdersTopic)
-          .partitionedRecords
-          .map { partitionStream =>
-            partitionStream
-              .evalMap { committable =>
-                processRecord(committable)
-              }
-              .map { record =>
-                ProducerRecords.one(record)
-              }
-              .through(KafkaProducer.pipe(producerSettings))
+          .records
+          .evalMap { committable =>
+            processRecord(committable)
           }
-          .parJoinUnbounded
+          .map { ack =>
+            ProducerRecords.one(ack)
+          }
+          .through(KafkaProducer.pipe(producerSettings))
           .as(F.unit)
       }
     }
